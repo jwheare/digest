@@ -1,0 +1,13 @@
+Required libs:
+- pylast 0.3 branch (slightly modified ask for details): http://code.google.com/p/pylast/
+- ReportLab: http://www.reportlab.org/
+
+You'll also need a settings module which defines these globals:
+GMAPS_KEY
+LASTFM_KEY
+LASTFM_SECRET
+LASTFM_SESSION
+
+APIs:
+- Google Static Maps: http://code.google.com/apis/maps/documentation/staticmaps/
+- Last.fm: http://www.last.fm/api
