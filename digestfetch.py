@@ -8,7 +8,7 @@ Fetch bitesize content from the world of the web for use in a daily digest pocke
 import re, urllib
 from copy import copy
 
-from BeautifulSoup import BeautifulSoup, SoupStrainer
+from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup, SoupStrainer
 AMPERSAND_MASSAGE = copy(BeautifulSoup.MARKUP_MASSAGE)
 
 import pylast
@@ -36,11 +36,30 @@ def lastfm_event_recommendations():
     events = user.getRecommendedEvents(limit=5)
     return events
 
+def get_tube_colors():
+    colors = {
+        "bakerloo":            ("ffffff", "ae6118"),
+        "central":             ("ffffff", "e41f1f"),
+        "circle":              ("113b92", "f8d42d"),
+        "district":            ("ffffff", "00a575"),
+        "eastlondon":          ("113b92", "f2ad41"),
+        "hammersmithandcity":  ("113b92", "e899a8"),
+        "jubilee":             ("ffffff", "8f989e"),
+        "metropolitan":        ("ffffff", "893267"),
+        "northern":            ("ffffff", "000000"),
+        "piccadilly":          ("ffffff", "0450a1"),
+        "victoria":            ("ffffff", "009fe0"),
+        "waterlooandcity":     ("113b92", "70c3ce"),
+        "dlr":                 ("ffffff", "00bbb4"),
+    }
+    return colors
+
 def tube_status():
     """Fetch Tube status from TFL"""
-    url = "http://www.tfl.gov.uk/tfl/livetravelnews/realtime/tube/default.html"
+    url = "http://www.tfl.gov.uk/tfl/livetravelnews/realtime/tube/later.html"
     soup = BeautifulSoup(urllib.urlopen(url), markupMassage=AMPERSAND_MASSAGE,
-        parseOnlyThese=SoupStrainer("div", { "id": "service-board" }))
+        parseOnlyThese=SoupStrainer("div", { "id": "service-board" }),
+        convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
     
     # Parse line status
     lines = soup.find("dl", { "id": "lines" }).findAll("dt")
@@ -48,9 +67,9 @@ def tube_status():
     for line in lines:
         status = line.findNext("dd")
         if status.h3:
-            line_status[line.string] = status.h3.string
+            line_status[line['class']] = (line.string, status.h3.string)
         else: 
-            line_status[line.string] = status.string
+            line_status[line['class']] = (line.string, "")
     # Parse station status
     station_categories = soup.find("dl", { "id": "stations" }).findAll("dt")
     station_status = {}
@@ -66,5 +85,13 @@ def tube_status():
     return line_status, station_status
 
 if __name__ == '__main__':
-    import pprint
-    pprint.pprint(tube_status())
+    line_status, station_status = tube_status()
+    colors = get_tube_colors()
+    
+    print u'Lines:'
+    for (k, v) in line_status.iteritems():
+        print u"• %s: %s (%s - text: #%s; bg: #%s)" % (v[0], v[1], k, colors[k][0], colors[k][1])
+    for k, v in station_status.iteritems():
+        print u"\n%s:" % k
+        for station in v:
+            print u'•', station

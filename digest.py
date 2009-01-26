@@ -6,10 +6,12 @@ Generate a daily digest PDF pocketmod booklet to print out and enjoy
 """
 
 import urllib
+import copy
 
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import inch
-from reportlab.platypus import Paragraph, Spacer, Image
+from reportlab.lib.colors import HexColor
+from reportlab.platypus import Paragraph, Spacer, Image, Table, TableStyle
 
 import pylast
 import digestfetch
@@ -72,8 +74,8 @@ def get_stylesheet():
     stylesheet.add(ParagraphStyle(
         name="Body",
         fontName="Times-Roman",
-        fontSize=12,
-        leading=16
+        fontSize=8,
+        leading=10,
     ))
     image_size = inch / 4
     stylesheet.add(ParagraphStyle(
@@ -85,10 +87,18 @@ def get_stylesheet():
         leftIndent=image_size + inch/28,
         firstLineIndent=-(image_size + inch/28),
     ))
+    stylesheet.add(ParagraphStyle(
+        name="List",
+        fontName="Helvetica",
+        fontSize=8,
+        leading=10,
+    ))
     return stylesheet
 
-def format_event_recommendations(events, style):
+def format_event_recommendations(style):
     """Format event recommendations fetched from Last.fm into reportlab Flowables"""
+    
+    events = digestfetch.lastfm_event_recommendations()
     
     paragraphs = []
     latlongs = []
@@ -121,44 +131,105 @@ def format_event_recommendations(events, style):
             pass
     return paragraphs, latlongs
 
-def fetch_frame_content(style, available_width, available_height):
-    """Fetch content to stuff in our frames"""
+def generate_map_url(latlongs, width, height):
+    """Generate a Google Static Map image URL"""
     
-    print "Fetching event recs"
-    print "==================="
-    events = digestfetch.lastfm_event_recommendations()
-    event_paragraphs, latlongs = format_event_recommendations(events, style)
-    
-    map_width = int(available_width)
-    map_height = int(available_height / 3)
     marker_color = "red"
-    
     event_map_markers = ["%s,%s%i" % (latlong, marker_color, i) for (i, latlong) in latlongs]
     event_map_url = "http://maps.google.com/staticmap?" + urllib.urlencode({
-        "size": "%ix%i" % (map_width*2, map_height*2),
+        "size": "%ix%i" % (width, height),
         "maptype": "mobile",
         "markers": "|".join(event_map_markers),
         "key": GMAPS_KEY,
         "sensor": "false"
     })
+    return event_map_url
+
+def format_tube_status(style, available_width):
+    """Format Tube status fetched from TFL into reportlab Flowables"""
+    
+    line_status, station_status = digestfetch.tube_status()
+    print "Processing",
+    colors = digestfetch.get_tube_colors()
+    
+    flowables = []
+    table_data = []
+    table_styles = []
+    row = 0
+    for (line, v) in line_status.items():
+        print ".",
+        name, status = v
+        color, bg = colors[line]
+        
+        table_data.append([name, status])
+        row_style = [
+            ('BACKGROUND', (0, row), (1, row), HexColor("#%s" % bg)),
+            ('TEXTCOLOR', (0, row), (1, row), HexColor("#%s" % color)),
+        ]
+        table_styles.extend(row_style)
+        row = row + 1
+    tl = (0, 0)
+    tr = (1, 0)
+    br = (1, row-1)
+    bl = (0, row-1)
+    table_styles.extend([
+        ('FONT',            tl, br, 'Helvetica'),
+        ('FONTSIZE',        tl, br, 6),
+        ('LEADING',         tl, br, 6),
+        ('VALIGN',          tl, br, 'MIDDLE'),
+        ('TOPPADDING',      tl, br, 1),
+        ('RIGHTPADDING',    tl, br, 2),
+        ('BOTTOMPADDING',   tl, br, 3),
+        ('LEFTPADDING',     tl, br, 2),
+        ('ALIGN',           tr, br, 'RIGHT'),
+    ])
+    fifth_width = available_width / 5
+    table = Table(table_data, colWidths=(3*fifth_width, 2*fifth_width))
+    table.setStyle(TableStyle(table_styles))
+    flowables.append(table)
+    flowables.append(Spacer(available_width, 8))
+    
+    for category, stations in station_status.iteritems():
+        flowables.append(Paragraph(category, style["Body"]))
+        for station in stations:
+            print ".",
+            flowables.append(Paragraph(u"<bullet>•</bullet> %s" % station.strip(), style["List"]))
+    
+    return flowables
+
+def fetch_frame_content(style, available_width, available_height):
+    """Fetch content to stuff in our frames"""
+    
+    print "Fetching event recs"
+    event_flowables, latlongs = format_event_recommendations(style)
+    
+    map_width = int(available_width)
+    map_height = int(available_height / 3)
+    
+    event_map_url = generate_map_url(latlongs, map_width*2, map_height*2)
     print "Event Map URL:", event_map_url
     
-    map_paragraph = Paragraph(u'<img src="%s" valign="top" width="%s" height="%s"/>' % (
-        event_map_url,
-        map_width,
-        map_height,
-    ), style["Body"])
-    map_spacer = Spacer(map_width, map_height)
+    if event_map_url:
+        event_flowables.insert(0, Spacer(map_width, map_height))
+        event_flowables.insert(0, Paragraph(
+            u'<img src="%s" valign="top" width="%s" height="%s"/>' % (
+                event_map_url,
+                map_width,
+                map_height,
+            ), style["Body"])
+        )
+    print "==================="
     
-    event_paragraphs.insert(0, map_spacer)
-    event_paragraphs.insert(0, map_paragraph)
+    print "Fetching tube status"
+    tube_flowables = format_tube_status(style, available_width)
+    print "done"
     print "==================="
     
     content = {
         '1-0': {
             'page': '6 right',
             'row': 'bottom',
-            'content': [Paragraph(u"6 right", style["Body"])],
+            'content': tube_flowables,
         },
         '2-0': {
             'page': 'Back',
@@ -178,7 +249,7 @@ def fetch_frame_content(style, available_width, available_height):
         '1-1': {
             'page': '2 right',
             'row': 'top',
-            'content': event_paragraphs,
+            'content': event_flowables,
         },
         '2-1': {
             'page': '3 left',
