@@ -5,8 +5,7 @@ digestfetch.py
 Fetch bitesize content from the world of the web for use in a daily digest pocketmod
 """
 
-import re, sys, getopt, urllib, urllib2, httplib, socket
-from cgi import parse_qs
+import re, urllib
 from copy import copy
 
 from BeautifulSoup import BeautifulSoup, SoupStrainer
