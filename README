@@ -1,5 +1,18 @@
+Scripts to generates a daily digest PDF in pocketmod booklet form to print out and enjoy.
+
+It doesn't do much yet, I'm slowly filling in the pages of the booklet. I'll add them here in the order they appear:
+
+1. Last.fm event recommendations
+2. 
+3. 
+4. 
+5. 
+6. 
+7. 
+8. 
+
 Required libs:
-- pylast 0.3 branch (slightly modified ask for details): http://code.google.com/p/pylast/
+- pylast 0.3 branch (slightly modified — ask for details): http://code.google.com/p/pylast/
 - ReportLab: http://www.reportlab.org/
 
 You'll also need a settings module which defines these globals:
