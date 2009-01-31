@@ -3,8 +3,8 @@ Scripts to generates a daily digest PDF in pocketmod booklet form to print out a
 It doesn't do much yet, I'm slowly filling in the pages of the booklet. I'll add them here in the order they appear:
 
 1. Last.fm event recommendations
-2. 
-3. 
+2. Tube line and station status
+3. Twitter updates
 4. 
 5. 
 6. 
@@ -14,13 +14,21 @@ It doesn't do much yet, I'm slowly filling in the pages of the booklet. I'll add
 Required libs:
 - pylast 0.3 branch (slightly modified — ask for details): http://code.google.com/p/pylast/
 - ReportLab: http://www.reportlab.org/
+- simplejson (currently using version from django)
+- BeautifulSoup
 
 You'll also need a settings module which defines these globals:
 GMAPS_KEY
 LASTFM_KEY
 LASTFM_SECRET
 LASTFM_SESSION
+TWITTER_USERNAME
+TWITTER_PASSWORD
 
 APIs:
 - Google Static Maps: http://code.google.com/apis/maps/documentation/staticmaps/
 - Last.fm: http://www.last.fm/api
+- Twitter: http://apiwiki.twitter.com/
+
+Screen Scraping:
+- TFL: http://www.tfl.gov.uk/
