@@ -13,7 +13,7 @@ AMPERSAND_MASSAGE = copy(BeautifulSoup.MARKUP_MASSAGE)
 
 import pylast
 
-from django.utils import simplejson
+import simplejson
 
 from settings import *
 

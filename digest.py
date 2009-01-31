@@ -126,27 +126,27 @@ def format_event_recommendations(style):
     i = 0
     for e in events:
         try:
-            info = e._getInfo()
-            print u"•", info['title'], e.getID()
+            print u'• %s (%s)' % (e.getTitle(), e.getID())
+            startDate = e.getStartDate()
             text = u"""
 <img src="%(image)s" width="%(dimension)s" height="%(dimension)s" valign="top"/>
 <seq id="eventrec">. <b>%(title)s</b> %(time)s
 <br/>
 %(artists)s at %(venue)s %(postcode)s
 """ % {
-                'image': info['images'][pylast.IMAGE_SMALL],
+                'image': e.getImage(pylast.IMAGE_SMALL),
                 'dimension': inch / 4,
-                'title': info['title'],
-                'artists': ", ".join(info['artists']),
-                'venue': info['venue']['name'],
-                'postcode': info['venue']['postal_code'] or u"",
+                'title': e.getTitle(),
+                'artists': ", ".join(e._getFromInfo('artists')),
+                'venue': e.getVenueName(),
+                'postcode': e.getPostalCode() or u"",
                 'time': "%s %s" % (
-                    info['startDate'].strftime("%a"),
-                    info['startDate'].strftime("%I:%M%p").lower().lstrip('0')
+                    startDate.strftime("%a"),
+                    startDate.strftime("%I:%M%p").lower().lstrip('0')
                 )
             }
             i = i + 1
-            latlongs.append((i, "%(lat)s,%(long)s" % info['venue']['geo']))
+            latlongs.append((i, "%s,%s" % e.getGeoPoint()))
             paragraphs.append(Paragraph(text, style["Event"]))
         except pylast.ServiceException:
             pass
