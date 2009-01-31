@@ -24,6 +24,7 @@ LASTFM_SECRET
 LASTFM_SESSION
 TWITTER_USERNAME
 TWITTER_PASSWORD
+TWITTER_USERID
 
 APIs:
 - Google Static Maps: http://code.google.com/apis/maps/documentation/staticmaps/

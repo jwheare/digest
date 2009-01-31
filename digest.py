@@ -7,6 +7,7 @@ Generate a daily digest PDF pocketmod booklet to print out and enjoy
 
 import urllib
 import copy
+import datetime, time
 
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import inch
@@ -96,6 +97,16 @@ def get_stylesheet():
         spaceAfter=8,
         leftIndent=image_size + inch/32,
         firstLineIndent=-(image_size + inch/32),
+    ))
+    stylesheet.add(ParagraphStyle(
+        name="TwitterReply",
+        fontName="Times-Roman",
+        fontSize=7,
+        leading=8,
+        spaceAfter=8,
+        leftIndent=image_size + inch/32,
+        firstLineIndent=-(image_size + inch/32),
+        textColor='red',
     ))
     stylesheet.add(ParagraphStyle(
         name="List",
@@ -212,16 +223,25 @@ def format_twitter_statuses(style):
     paragraphs = []
     statuses = digestfetch.twitter_friends()
     for status in statuses:
+        date = datetime.datetime(*time.strptime(status['created_at'], '%a %b %d %H:%M:%S +0000 %Y')[:6])
         text = u"""
 <img src="%(image)s" width="%(dimension)s" height="%(dimension)s" valign="top"/>
-<b>%(user)s</b>: %(message)s
+<b>%(user)s</b>: %(message)s (<i>%(time)s</i>)
 """ % {
             'image': status['user']['profile_image_url'],
             'dimension': inch / 5,
             'user': status['user']['name'],
             'message': status['text'],
+            'time': "%s %s" % (
+                date.strftime("%a"),
+                date.strftime("%I:%M%p").lower().lstrip('0')
+            )
         }
-        paragraphs.append(Paragraph(text, style["Twitter"]))
+        if status['in_reply_to_user_id'] == TWITTER_USERID:
+            paragraphs.append(Paragraph(text, style["TwitterReply"]))
+        else:
+            paragraphs.append(Paragraph(text, style["Twitter"]))
+        print u"•", status['user']['name']
     return paragraphs
 
 def fetch_frame_content(style, available_width, available_height):
