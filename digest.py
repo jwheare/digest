@@ -208,7 +208,7 @@ def format_tube_status(style, available_width):
     return flowables
 
 def format_twitter_statuses(style):
-    """Formate Twitter statuses into reportlab Flowables"""
+    """Format Twitter statuses into reportlab Flowables"""
     paragraphs = []
     statuses = digestfetch.twitter_friends()
     for status in statuses:
