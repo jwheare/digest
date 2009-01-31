@@ -5,20 +5,21 @@ digestfetch.py
 Fetch bitesize content from the world of the web for use in a daily digest pocketmod
 """
 
+# Builtin modules
 import re
 import urllib, urllib2
 import time, datetime
 from copy import copy
+from operator import itemgetter
 
-from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup, SoupStrainer
-AMPERSAND_MASSAGE = copy(BeautifulSoup.MARKUP_MASSAGE)
-
+# 3rd party modules
 import pylast
-
 import simplejson
-
 import feedparser
+from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup, SoupStrainer
+import gdata.calendar.service
 
+# Settings, keys, passwords
 from settings import *
 
 def lastfm_auth():
@@ -63,7 +64,7 @@ def get_tube_colors():
 def tube_status():
     """Fetch Tube status from TFL"""
     url = "http://www.tfl.gov.uk/tfl/livetravelnews/realtime/tube/later.html"
-    soup = BeautifulSoup(urllib.urlopen(url), markupMassage=AMPERSAND_MASSAGE,
+    soup = BeautifulSoup(urllib.urlopen(url), markupMassage=BeautifulSoup.MARKUP_MASSAGE,
         parseOnlyThese=SoupStrainer("div", { "id": "service-board" }),
         convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
     
@@ -128,14 +129,68 @@ def newsgator_headlines():
     except urllib2.HTTPError, e:
         print e
 
+def gcal_events():
+    """Fetch events from a list of Google Calendars"""
+    calendar_service = gdata.calendar.service.CalendarService()
+    calendar_service.email = GCAL_USERNAME
+    calendar_service.password = GCAL_PASSWORD
+    calendar_service.ProgrammaticLogin()
+    
+    # feed = calendar_service.GetAllCalendarsFeed()
+    # for i, calendar in enumerate(feed.entry):
+    #     print '\t%s. %s (%s %s)' % (i, calendar.title.text, calendar.color.value, calendar.id.text.split('/')[-1])
+    
+    events = []
+    
+    start_min = time.strftime('%Y-%m-%d', time.gmtime(time.time()))
+    start_max = time.strftime('%Y-%m-%d', time.gmtime(time.time() + 60*60*24*3))
+    for (calendar, info) in GCAL_CALENDARS.iteritems():
+        cal_name, color = info
+        print u'•', cal_name
+        query = gdata.calendar.service.CalendarEventQuery(calendar, 'private', 'composite')
+        query.start_min = start_min
+        query.start_max = start_max
+        query.orderby = 'starttime'
+        query.sortorder = 'ascending'
+        # print query
+        
+        feed = calendar_service.CalendarQuery(query)
+        # print feed
+        for event in feed.entry:
+            comments = []
+            if event.comments and event.comments.feed_link and event.comments.feed_link.feed:
+                for c in event.comments.feed_link.feed.entry:
+                    if c.content.text:
+                        comments.append({
+                            'author': c.author[0].name.text,
+                            'content': c.content.text,
+                        })
+            event_info = {
+                'color': color,
+                'title': event.title.text,
+                'comments': comments,
+                'allday': False,
+                'location': event.where[0].value_string
+            }
+            try:
+                start = datetime.datetime.strptime(event.when[0].start_time, "%Y-%m-%dT%H:%M:%S.000Z")
+            except ValueError:
+                start = datetime.datetime.strptime(event.when[0].start_time, "%Y-%m-%d")
+                event_info['allday'] = True
+            event_info['start'] = start
+            events.append(event_info)
+    events.sort(key=itemgetter('start'))
+    return events
+
 if __name__ == '__main__':
-    data = newsgator_headlines()
-    for entry in data.entries:
-        updated = datetime.datetime(*time.strptime(entry.updated, "%a, %d %b %Y %H:%M:%S %Z")[:6])
-        print u"""• %s
-%s (%s %s)""" % (
-            entry.feedtitle,
-            entry.title,
-            updated.strftime("%a"),
-            updated.strftime("%I:%M%p").lower().lstrip('0')
-        )
+    events = gcal_events()
+    
+    for e in events:
+        if e['allday']:
+            e['startstring'] = e['start'].strftime("%a")
+        else:
+            e['startstring'] = u"%s %s" % (
+                e['start'].strftime("%a"),
+                e['start'].strftime("%I:%M%p").lower().lstrip('0')
+            )
+        print u"#%(color)s %(startstring)s: %(title)s %(location)s" % e

@@ -115,6 +115,21 @@ def get_stylesheet():
         leading=9,
         bulletIndent=1,
     ))
+    stylesheet.add(ParagraphStyle(
+        name="Cal",
+        fontName="Helvetica",
+        fontSize=6,
+        leading=8,
+        textColor='white',
+    ))
+    stylesheet.add(ParagraphStyle(
+        name="CalComment",
+        fontName="Helvetica",
+        fontSize=6,
+        leading=6,
+        textColor='black',
+    ))
+
     return stylesheet
 
 def format_event_recommendations(style):
@@ -124,8 +139,7 @@ def format_event_recommendations(style):
     
     paragraphs = []
     latlongs = []
-    i = 0
-    for e in events:
+    for i, e in enumerate(events):
         try:
             print u'• %s (%s)' % (e.getTitle(), e.getID())
             startDate = e.getStartDate()
@@ -146,7 +160,6 @@ def format_event_recommendations(style):
                     startDate.strftime("%I:%M%p").lower().lstrip('0')
                 )
             }
-            i = i + 1
             latlongs.append((i, "%s,%s" % e.getGeoPoint()))
             paragraphs.append(Paragraph(text, style["Event"]))
         except pylast.ServiceException:
@@ -157,7 +170,7 @@ def generate_map_url(latlongs, width, height):
     """Generate a Google Static Map image URL"""
     
     marker_color = "red"
-    event_map_markers = ["%s,%s%i" % (latlong, marker_color, i) for (i, latlong) in latlongs]
+    event_map_markers = ["%s,%s%i" % (latlong, marker_color, i) for i, latlong in latlongs]
     event_map_url = "http://maps.google.com/staticmap?" + urllib.urlencode({
         "size": "%ix%i" % (width, height),
         "maptype": "mobile",
@@ -171,6 +184,7 @@ def format_tube_status(style, available_width):
     """Format Tube status fetched from TFL into reportlab Flowables"""
     
     line_status, station_status = digestfetch.tube_status()
+    
     print "Processing",
     colors = digestfetch.get_tube_colors()
     
@@ -178,7 +192,7 @@ def format_tube_status(style, available_width):
     table_data = []
     table_styles = []
     row = 0
-    for (line, v) in line_status.items():
+    for line, v in line_status.items():
         print ".",
         name, status = v
         color, bg = colors[line]
@@ -224,7 +238,7 @@ def format_twitter_statuses(style):
     paragraphs = []
     statuses = digestfetch.twitter_friends()
     for status in statuses:
-        date = datetime.datetime(*time.strptime(status['created_at'], '%a %b %d %H:%M:%S +0000 %Y')[:6])
+        date = datetime.datetime.strptime(status['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
         text = u"""
 <img src="%(image)s" width="%(dimension)s" height="%(dimension)s" valign="top"/>
 <b>%(user)s</b>: %(message)s (<i>%(time)s</i>)
@@ -248,10 +262,11 @@ def format_twitter_statuses(style):
 def format_newsgator_headlines(style):
     """Format RSS feeds from Newsgator into reportlab Flowables"""
     data = digestfetch.newsgator_headlines()
-    flowables = []
+    
     print "Processing",
+    flowables = []
     for entry in data.entries:
-        updated = datetime.datetime(*time.strptime(entry.updated, "%a, %d %b %Y %H:%M:%S %Z")[:6])
+        updated = datetime.datetime.strptime(entry.updated, "%a, %d %b %Y %H:%M:%S %Z")
         print ".",
         flowables.append(Paragraph(u"""<bullet>•</bullet> %s
 <b>%s</b> (<i>%s %s</i>)""" % (
@@ -263,8 +278,86 @@ def format_newsgator_headlines(style):
     print "done"
     return flowables
 
+def format_gcal_events(style, available_width):
+    """Form events from Google Calendar into reportlab Flowables"""
+    events = digestfetch.gcal_events()
+    
+    print "Processing",
+    flowables = []
+    table_data = []
+    table_styles = []
+    line_styles = []
+    row = 0
+    weekday = ''
+    for e in events:
+        old_weekday = weekday
+        weekday = e['start'].strftime("%a")
+        new_day = False
+        if old_weekday and old_weekday != weekday:
+            line_styles.append(
+                ('LINEABOVE', (0, row), (1, row), 1, 'black')
+            )
+        
+        if e['allday']:
+            startstring = weekday
+            formatstring = u"<b>%s</b>"
+        else:
+            startstring = u"%s %s" % (
+                weekday,
+                e['start'].strftime("%I:%M%p").lower().lstrip('0')
+            )
+            formatstring = u"%s"
+        
+        title_data = [Paragraph(formatstring % e['title'], style["Cal"])]
+        
+        if e['location']:
+            title_data.append(Paragraph(e['location'], style["Cal"]))
+        
+        table_data.append([
+            Paragraph(formatstring % startstring, style["Cal"]),
+            title_data,
+        ])
+        row_style = [
+            ('BACKGROUND', (0, row), (1, row), HexColor("#%s" % e['color'])),
+        ]
+        table_styles.extend(row_style)
+        for c_row, c in enumerate(e['comments']):
+            row = row + 1
+            table_data.append([
+                Paragraph(c['author'], style["CalComment"]),
+                Paragraph(c['content'], style["CalComment"]),
+            ])
+            row_style = [
+                ('BACKGROUND', (0, row+c_row), (1, row+c_row), "white"),
+            ]
+            table_styles.extend(row_style)
+        row = row + 1
+        print ".",
+    tl = (0, 0)
+    tr = (1, 0)
+    bl = (0, row-1)
+    br = (1, row-1)
+    table_styles.extend([
+        ('VALIGN',          tl, br, 'TOP'),
+        ('TOPPADDING',      tl, br, 3),
+        ('RIGHTPADDING',    tl, br, 2),
+        ('BOTTOMPADDING',   tl, br, 1),
+        ('LEFTPADDING',     tl, br, 2),
+    ])
+    fifth_width = available_width / 5
+    table = Table(table_data, colWidths=(1.2*fifth_width, 3.8*fifth_width), style=line_styles)
+    table.setStyle(TableStyle(table_styles))
+    flowables.append(table)
+    flowables.append(Spacer(available_width, 8))
+    print "done"
+    return flowables
+
 def fetch_frame_content(style, available_width, available_height):
     """Fetch content to stuff in our frames"""
+    
+    print "Fetching Google Calendar events"
+    gcal_flowables = format_gcal_events(style, available_width)
+    print "==================="
     
     print "Fetching event recs"
     event_flowables, latlongs = format_event_recommendations(style)
@@ -273,7 +366,6 @@ def fetch_frame_content(style, available_width, available_height):
     map_height = int(available_height / 3)
     
     event_map_url = generate_map_url(latlongs, map_width*2, map_height*2)
-    print "Event Map URL:", event_map_url
     
     if event_map_url:
         event_flowables.insert(0, Spacer(map_width, map_height))
@@ -288,7 +380,6 @@ def fetch_frame_content(style, available_width, available_height):
     
     print "Fetching tube status"
     tube_flowables = format_tube_status(style, available_width)
-    print "done"
     print "==================="
     
     print "Fetching Twitter updates"
@@ -338,7 +429,7 @@ def fetch_frame_content(style, available_width, available_height):
         '0-0': {
             'page': '5 left',
             'row': 'bottom',
-            'content': [Paragraph(u"5 left", style["Body"])],
+            'content': gcal_flowables,
         },
     }
     return content
