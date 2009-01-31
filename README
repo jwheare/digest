@@ -14,8 +14,8 @@ It doesn't do much yet, I'm slowly filling in the pages of the booklet. I'll add
 Required libs:
 - pylast 0.3 branch (slightly modified — ask for details): http://code.google.com/p/pylast/
 - ReportLab: http://www.reportlab.org/
-- simplejson (currently using version from django)
-- BeautifulSoup
+- simplejson (currently using version from django): http://code.google.com/p/simplejson/
+- BeautifulSoup: http://www.crummy.com/software/BeautifulSoup/
 
 You'll also need a settings module which defines these globals:
 GMAPS_KEY
