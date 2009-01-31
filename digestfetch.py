@@ -5,7 +5,9 @@ digestfetch.py
 Fetch bitesize content from the world of the web for use in a daily digest pocketmod
 """
 
-import re, urllib, urllib2
+import re
+import urllib, urllib2
+import time, datetime
 from copy import copy
 
 from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup, SoupStrainer
@@ -14,6 +16,8 @@ AMPERSAND_MASSAGE = copy(BeautifulSoup.MARKUP_MASSAGE)
 import pylast
 
 import simplejson
+
+import feedparser
 
 from settings import *
 
@@ -91,7 +95,7 @@ def twitter_friends():
     url = "http://twitter.com/statuses/friends_timeline.json"
     
     passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
-    passman.add_password("Twitter API", url, TWITTER_USERNAME, TWITTER_PASSWORD)
+    passman.add_password("Twitter API", "twitter.com", TWITTER_USERNAME, TWITTER_PASSWORD)
     
     authhandler = urllib2.HTTPBasicAuthHandler(passman)
     
@@ -104,7 +108,34 @@ def twitter_friends():
     except urllib2.HTTPError, e:
         print e
 
+def newsgator_headlines():
+    """Fetch unread feeds from Newsgator"""
+    url = "http://services.newsgator.com/ngws/svc/Subscription.aspx/%s/headlines" % NEWSGATOR_LOCATIONID
+    
+    passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
+    passman.add_password("NewsGator Online Services", "services.newsgator.com", NEWSGATOR_USERNAME, NEWSGATOR_PASSWORD)
+    
+    authhandler = urllib2.HTTPBasicAuthHandler(passman)
+    
+    opener = urllib2.build_opener(authhandler)
+    opener.addheaders = [
+        ('X-NGAPIToken', NEWSGATOR_KEY)
+    ]
+    try:
+        rss = opener.open(url).read()
+        data = feedparser.parse(rss)
+        return data
+    except urllib2.HTTPError, e:
+        print e
+
 if __name__ == '__main__':
-    statuses = twitter_friends()
-    for status in statuses:
-        print "%s: %s (%s)" % (status['user']['name'], status['text'], status['user']['profile_image_url'])
+    data = newsgator_headlines()
+    for entry in data.entries:
+        updated = datetime.datetime(*time.strptime(entry.updated, "%a, %d %b %Y %H:%M:%S %Z")[:6])
+        print u"""• %s
+%s (%s %s)""" % (
+            entry.feedtitle,
+            entry.title,
+            updated.strftime("%a"),
+            updated.strftime("%I:%M%p").lower().lstrip('0')
+        )

@@ -110,9 +110,10 @@ def get_stylesheet():
     ))
     stylesheet.add(ParagraphStyle(
         name="List",
-        fontName="Helvetica",
-        fontSize=7,
-        leading=8,
+        fontName="Times-Roman",
+        fontSize=8,
+        leading=9,
+        bulletIndent=1,
     ))
     return stylesheet
 
@@ -215,7 +216,7 @@ def format_tube_status(style, available_width):
         for station in stations:
             print ".",
             flowables.append(Paragraph(u"<bullet>•</bullet> %s" % station.strip(), style["List"]))
-    
+    print "done"
     return flowables
 
 def format_twitter_statuses(style):
@@ -243,6 +244,24 @@ def format_twitter_statuses(style):
             paragraphs.append(Paragraph(text, style["Twitter"]))
         print u"•", status['user']['name']
     return paragraphs
+
+def format_newsgator_headlines(style):
+    """Format RSS feeds from Newsgator into reportlab Flowables"""
+    data = digestfetch.newsgator_headlines()
+    flowables = []
+    print "Processing",
+    for entry in data.entries:
+        updated = datetime.datetime(*time.strptime(entry.updated, "%a, %d %b %Y %H:%M:%S %Z")[:6])
+        print ".",
+        flowables.append(Paragraph(u"""<bullet>•</bullet> %s
+<b>%s</b> (<i>%s %s</i>)""" % (
+            entry.feedtitle,
+            entry.title,
+            updated.strftime("%a"),
+            updated.strftime("%I:%M%p").lower().lstrip('0')
+        ), style["List"]))
+    print "done"
+    return flowables
 
 def fetch_frame_content(style, available_width, available_height):
     """Fetch content to stuff in our frames"""
@@ -274,7 +293,10 @@ def fetch_frame_content(style, available_width, available_height):
     
     print "Fetching Twitter updates"
     twitter_flowables = format_twitter_statuses(style)
-    print "done"
+    print "==================="
+    
+    print "Fetching Newsgator headlines"
+    newsgator_flowables = format_newsgator_headlines(style)
     print "==================="
     
     content = {
@@ -291,7 +313,7 @@ def fetch_frame_content(style, available_width, available_height):
         '3-0': {
             'page': 'Front',
             'row': 'bottom',
-            'content': [Paragraph(u'Front', style["Body"])],
+            'content': newsgator_flowables,
         },
         '0-1': {
             'page': '1 left',
