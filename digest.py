@@ -33,7 +33,7 @@ MARGINS = {
     'left': 0,
 }
 
-FILENAME = "digest.pdf"
+FILENAME = "output/digest.pdf"
 
 def calculate_frame_dimensions():
     """Get the width and height of our frames"""
