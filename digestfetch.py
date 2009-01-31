@@ -5,13 +5,15 @@ digestfetch.py
 Fetch bitesize content from the world of the web for use in a daily digest pocketmod
 """
 
-import re, urllib
+import re, urllib, urllib2
 from copy import copy
 
 from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup, SoupStrainer
 AMPERSAND_MASSAGE = copy(BeautifulSoup.MARKUP_MASSAGE)
 
 import pylast
+
+from django.utils import simplejson
 
 from settings import *
 
@@ -84,14 +86,25 @@ def tube_status():
     
     return line_status, station_status
 
-if __name__ == '__main__':
-    line_status, station_status = tube_status()
-    colors = get_tube_colors()
+def twitter_friends():
+    """Fetch Twitter updates from friends"""
+    url = "http://twitter.com/statuses/friends_timeline.json"
     
-    print u'Lines:'
-    for (k, v) in line_status.iteritems():
-        print u"• %s: %s (%s - text: #%s; bg: #%s)" % (v[0], v[1], k, colors[k][0], colors[k][1])
-    for k, v in station_status.iteritems():
-        print u"\n%s:" % k
-        for station in v:
-            print u'•', station
+    passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
+    passman.add_password("Twitter API", url, TWITTER_USERNAME, TWITTER_PASSWORD)
+    
+    authhandler = urllib2.HTTPBasicAuthHandler(passman)
+    
+    opener = urllib2.build_opener(authhandler)
+    
+    try:
+        json = opener.open(url).read()
+        statuses = simplejson.loads(json)
+        return statuses
+    except urllib2.HTTPError, e:
+        print e
+
+if __name__ == '__main__':
+    statuses = twitter_friends()
+    for status in statuses:
+        print "%s: %s (%s)" % (status['user']['name'], status['text'], status['user']['profile_image_url'])

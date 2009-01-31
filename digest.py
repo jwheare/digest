@@ -74,24 +74,34 @@ def get_stylesheet():
     stylesheet.add(ParagraphStyle(
         name="Body",
         fontName="Times-Roman",
-        fontSize=8,
-        leading=10,
+        fontSize=7,
+        leading=8,
     ))
     image_size = inch / 4
     stylesheet.add(ParagraphStyle(
         name="Event",
         fontName="Times-Roman",
-        fontSize=8,
-        leading=10,
+        fontSize=7,
+        leading=8,
         spaceAfter=10,
         leftIndent=image_size + inch/28,
         firstLineIndent=-(image_size + inch/28),
     ))
+    image_size = inch / 5
+    stylesheet.add(ParagraphStyle(
+        name="Twitter",
+        fontName="Times-Roman",
+        fontSize=7,
+        leading=8,
+        spaceAfter=8,
+        leftIndent=image_size + inch/32,
+        firstLineIndent=-(image_size + inch/32),
+    ))
     stylesheet.add(ParagraphStyle(
         name="List",
         fontName="Helvetica",
-        fontSize=8,
-        leading=10,
+        fontSize=7,
+        leading=8,
     ))
     return stylesheet
 
@@ -197,6 +207,23 @@ def format_tube_status(style, available_width):
     
     return flowables
 
+def format_twitter_statuses(style):
+    """Formate Twitter statuses into reportlab Flowables"""
+    paragraphs = []
+    statuses = digestfetch.twitter_friends()
+    for status in statuses:
+        text = u"""
+<img src="%(image)s" width="%(dimension)s" height="%(dimension)s" valign="top"/>
+<b>%(user)s</b>: %(message)s
+""" % {
+            'image': status['user']['profile_image_url'],
+            'dimension': inch / 5,
+            'user': status['user']['name'],
+            'message': status['text'],
+        }
+        paragraphs.append(Paragraph(text, style["Twitter"]))
+    return paragraphs
+
 def fetch_frame_content(style, available_width, available_height):
     """Fetch content to stuff in our frames"""
     
@@ -225,6 +252,11 @@ def fetch_frame_content(style, available_width, available_height):
     print "done"
     print "==================="
     
+    print "Fetching Twitter updates"
+    twitter_flowables = format_twitter_statuses(style)
+    print "done"
+    print "==================="
+    
     content = {
         '1-0': {
             'page': '6 right',
@@ -234,7 +266,7 @@ def fetch_frame_content(style, available_width, available_height):
         '2-0': {
             'page': 'Back',
             'row': 'bottom',
-            'content': [Paragraph(u'Back', style["Body"])],
+            'content': twitter_flowables,
         },
         '3-0': {
             'page': 'Front',
