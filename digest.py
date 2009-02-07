@@ -8,6 +8,8 @@ Generate a daily digest PDF pocketmod booklet to print out and enjoy
 import urllib
 import copy
 import datetime, time
+import re
+import sys
 
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import inch
@@ -33,6 +35,12 @@ MARGINS = {
     'bottom': 0,
     'left': 0,
 }
+
+
+TL = (0, 0)
+TR = (1, 0)
+BR = (1, -1)
+BL = (0, -1)
 
 FILENAME = "output/digest.pdf"
 
@@ -139,28 +147,30 @@ def format_event_recommendations(style):
     
     paragraphs = []
     latlongs = []
-    for i, e in enumerate(events):
+    i = 1
+    for e in events:
         try:
             print u'• %s (%s)' % (e.getTitle(), e.getID())
             startDate = e.getStartDate()
             text = u"""
 <img src="%(image)s" width="%(dimension)s" height="%(dimension)s" valign="top"/>
-<seq id="eventrec">. <b>%(title)s</b> %(time)s
+<seq id="eventrec">. <b>%(title)s</b> %(time)s - %(venue)s %(postcode)s
 <br/>
-%(artists)s at %(venue)s %(postcode)s
+%(artists)s
 """ % {
                 'image': e.getImage(pylast.IMAGE_SMALL),
                 'dimension': inch / 4,
                 'title': e.getTitle(),
-                'artists': ", ".join(e._getFromInfo('artists')),
+                'artists': u", ".join(e._getFromInfo('artists')),
                 'venue': e.getVenueName(),
                 'postcode': e.getPostalCode() or u"",
-                'time': "%s %s" % (
+                'time': u"%s %s" % (
                     startDate.strftime("%a"),
                     startDate.strftime("%I:%M%p").lower().lstrip('0')
                 )
             }
             latlongs.append((i, "%s,%s" % e.getGeoPoint()))
+            i += 1
             paragraphs.append(Paragraph(text, style["Event"]))
         except pylast.ServiceException:
             pass
@@ -203,21 +213,17 @@ def format_tube_status(style, available_width):
             ('TEXTCOLOR', (0, row), (1, row), HexColor("#%s" % color)),
         ]
         table_styles.extend(row_style)
-        row = row + 1
-    tl = (0, 0)
-    tr = (1, 0)
-    br = (1, row-1)
-    bl = (0, row-1)
+        row += 1
     table_styles.extend([
-        ('FONT',            tl, br, 'Helvetica'),
-        ('FONTSIZE',        tl, br, 6),
-        ('LEADING',         tl, br, 6),
-        ('VALIGN',          tl, br, 'MIDDLE'),
-        ('TOPPADDING',      tl, br, 1),
-        ('RIGHTPADDING',    tl, br, 2),
-        ('BOTTOMPADDING',   tl, br, 3),
-        ('LEFTPADDING',     tl, br, 2),
-        ('ALIGN',           tr, br, 'RIGHT'),
+        ('FONT',            TL, BR, 'Helvetica'),
+        ('FONTSIZE',        TL, BR, 6),
+        ('LEADING',         TL, BR, 6),
+        ('VALIGN',          TL, BR, 'MIDDLE'),
+        ('TOPPADDING',      TL, BR, 1),
+        ('RIGHTPADDING',    TL, BR, 2),
+        ('BOTTOMPADDING',   TL, BR, 3),
+        ('LEFTPADDING',     TL, BR, 2),
+        ('ALIGN',           TR, BR, 'RIGHT'),
     ])
     fifth_width = available_width / 5
     table = Table(table_data, colWidths=(3*fifth_width, 2*fifth_width))
@@ -322,7 +328,7 @@ def format_gcal_events(style, available_width):
         ]
         table_styles.extend(row_style)
         for c_row, c in enumerate(e['comments']):
-            row = row + 1
+            row += 1
             table_data.append([
                 Paragraph(c['author'], style["CalComment"]),
                 Paragraph(c['content'], style["CalComment"]),
@@ -331,29 +337,92 @@ def format_gcal_events(style, available_width):
                 ('BACKGROUND', (0, row+c_row), (1, row+c_row), "white"),
             ]
             table_styles.extend(row_style)
-        row = row + 1
+        row += 1
         print ".",
-    tl = (0, 0)
-    tr = (1, 0)
-    bl = (0, row-1)
-    br = (1, row-1)
-    table_styles.extend([
-        ('VALIGN',          tl, br, 'TOP'),
-        ('TOPPADDING',      tl, br, 3),
-        ('RIGHTPADDING',    tl, br, 2),
-        ('BOTTOMPADDING',   tl, br, 1),
-        ('LEFTPADDING',     tl, br, 2),
+    table_styles.extend([  
+        ('VALIGN',          TL, BR, 'TOP'),
+        ('TOPPADDING',      TL, BR, 3),
+        ('RIGHTPADDING',    TL, BR, 2),
+        ('BOTTOMPADDING',   TL, BR, 1),
+        ('LEFTPADDING',     TL, BR, 2),
     ])
     fifth_width = available_width / 5
     table = Table(table_data, colWidths=(1.2*fifth_width, 3.8*fifth_width), style=line_styles)
     table.setStyle(TableStyle(table_styles))
     flowables.append(table)
-    flowables.append(Spacer(available_width, 8))
     print "done"
     return flowables
 
+def format_weather(style, available_width):
+    forecast_data, warning_data = digestfetch.weather()
+    
+    # http://www.bbc.co.uk/weather/images/symbols/57x57/3.gif
+    # http://www.bbc.co.uk/weather/images/symbols/fiveday_sym/3.gif (80/65)
+    image_source = forecast_data['feed']['image']['href'].replace('57x57', 'fiveday_sym')
+    aspect_ratio = 65.0/80.0
+    image_width = inch/2.5
+    image_height = image_width * aspect_ratio
+    image_cell = Paragraph(u'<img src="%(source)s" valign="middle" width="%(width)s" height="%(height)s"/>' % {
+        'source': image_source,
+        'width': image_width,
+        'height': image_height,
+    }, style['Body'])
+    
+    # Saturday: sunny intervals, Max Temp: 2°C (36°F), Min Temp: -2°C (28°F)
+    weather_regex = re.compile(ur'([^:]+): ([^,]+), Max Temp: ([^°]+)°C [^,]+, Min Temp: ([^°]+)°C(.+)')
+    table_data = []
+    for i, day in enumerate(forecast_data['entries']):
+        details = day['title'].strip()
+        matches = weather_regex.match(details)
+        if matches:
+            params = {
+                'day':      matches.group(1),
+                'summary':  matches.group(2),
+                'max_temp': matches.group(3),
+                'min_temp': matches.group(4),
+            }
+            if i > 0:
+                image_cell = u''
+            table_data.append((
+                image_cell,
+                u"%(day)s: %(summary)s %(min_temp)s/%(max_temp)s°C" % params,
+            ))
+    
+    left_width = image_width + inch/8
+    table = Table(table_data, colWidths=(left_width, available_width - left_width), style=[
+        ('SPAN', TL, (0, i)),
+    ])
+    table.setStyle(TableStyle([
+        ('VALIGN',          TL, BR, 'MIDDLE'),
+        ('TOPPADDING',      TL, BR, 0),
+        ('RIGHTPADDING',    TL, BR, 0),
+        ('BOTTOMPADDING',   TL, BR, 0),
+        ('LEFTPADDING',     TL, BR, 0),
+    ]))
+    weather_flowables = [
+        table,
+        Spacer(available_width, 8),
+    ]
+    
+    warning_regex = re.compile(ur'^(.+: )')
+    for entry in warning_data['entries']:
+        warning_date = datetime.datetime(*entry['updated_parsed'][:6])
+        # ADVISORY of Heavy Snow for London & South East England
+        warning_summmary = entry['summary'].strip().replace(' for %s' % MET_WEATHER_REGION_FULL, '')
+        weather_flowables.append(Paragraph(u"%s %s - %s" % (
+            warning_date.strftime("%a"),
+            warning_date.strftime("%I:%M%p").lower().lstrip('0'),
+            warning_summmary
+        ), style['List']))
+    
+    return weather_flowables
+
 def fetch_frame_content(style, available_width, available_height):
     """Fetch content to stuff in our frames"""
+    
+    print "Fetching weather forecast"
+    weather_flowables = format_weather(style, available_width)
+    print "==================="
     
     print "Fetching Google Calendar events"
     gcal_flowables = format_gcal_events(style, available_width)
@@ -429,7 +498,7 @@ def fetch_frame_content(style, available_width, available_height):
         '0-0': {
             'page': '5 left',
             'row': 'bottom',
-            'content': gcal_flowables,
+            'content': weather_flowables + [Spacer(available_width, 8)] + gcal_flowables,
         },
     }
     return content

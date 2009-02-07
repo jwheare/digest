@@ -8,7 +8,7 @@ There's not much to it yet, I'm slowly filling in the pages of the booklet. I'll
 2. Tube line and station status
 3. Twitter updates
 4. Newsgator RSS headlines
-5. Google calendar
+5. Google calendar + Weather
 6. 
 7. 
 8. 
@@ -36,6 +36,9 @@ NEWSGATOR_LOCATIONID
 GCAL_USERNAME
 GCAL_PASSWORD
 GCAL_CALENDARS
+BBC_WEATHER_LOCATION
+MET_WEATHER_REGION
+MET_WEATHER_REGION_FULL
 
 APIs:
 - Google Static Maps: http://code.google.com/apis/maps/documentation/staticmaps/
@@ -43,6 +46,10 @@ APIs:
 - Twitter: http://apiwiki.twitter.com/
 - Newsgator: http://www.newsgator.com/ngs/api/
 - Google Calendar: http://code.google.com/apis/calendar/
+
+RSS:
+- BBC Weather: http://news.bbc.co.uk/weather/hi/about/newsid_7788000/7788189.stm
+- Met Office warnings and advisories: http://www.metoffice.gov.uk/weather/uk/rss/help.html
 
 Screen Scraping:
 - TFL: http://www.tfl.gov.uk/

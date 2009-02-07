@@ -40,7 +40,7 @@ def lastfm_auth():
 def lastfm_event_recommendations():
     """Fetch a list of event recommendations for today from Last.fm"""
     user = pylast.User('jwheare', LASTFM_KEY, LASTFM_SECRET, LASTFM_SESSION)
-    events = user.getRecommendedEvents(limit=5)
+    events = user.getRecommendedEvents(limit=6)
     return events
 
 def get_tube_colors():
@@ -123,8 +123,7 @@ def newsgator_headlines():
         ('X-NGAPIToken', NEWSGATOR_KEY)
     ]
     try:
-        rss = opener.open(url).read()
-        data = feedparser.parse(rss)
+        data = feedparser.parse(opener.open(url))
         return data
     except urllib2.HTTPError, e:
         print e
@@ -182,15 +181,20 @@ def gcal_events():
     events.sort(key=itemgetter('start'))
     return events
 
-if __name__ == '__main__':
-    events = gcal_events()
+def weather():
+    forecast_url = "http://feeds.bbc.co.uk/weather/feeds/rss/5day/world/%s.xml" % BBC_WEATHER_LOCATION
+    forecast_data = feedparser.parse(urllib.urlopen(forecast_url))
     
-    for e in events:
-        if e['allday']:
-            e['startstring'] = e['start'].strftime("%a")
-        else:
-            e['startstring'] = u"%s %s" % (
-                e['start'].strftime("%a"),
-                e['start'].strftime("%I:%M%p").lower().lstrip('0')
-            )
-        print u"#%(color)s %(startstring)s: %(title)s %(location)s" % e
+    warning_url = "http://www.metoffice.gov.uk/xml/warnings_rss_%s.xml" % MET_WEATHER_REGION
+    warning_data = feedparser.parse(urllib.urlopen(warning_url))
+    
+    return forecast_data, warning_data
+
+if __name__ == '__main__':
+    weather_data, forecast_data = weather()
+    print weather_data['feed']['image']['href']
+    for day in weather_data['entries']:
+        print day['title']
+    for entry in forecast_data['entries']:
+        print datetime.datetime(*entry['updated_parsed'][:6])
+        print entry['title']
