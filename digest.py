@@ -381,6 +381,7 @@ def format_weather(style, available_width):
                 'max_temp': matches.group(3),
                 'min_temp': matches.group(4),
             }
+            print u"• %s" % params['day']
             if i > 0:
                 image_cell = u''
             table_data.append((
@@ -405,16 +406,23 @@ def format_weather(style, available_width):
     ]
     
     warning_regex = re.compile(ur'^(.+: )')
-    for entry in warning_data['entries']:
-        warning_date = datetime.datetime(*entry['updated_parsed'][:6])
-        # ADVISORY of Heavy Snow for London & South East England
-        warning_summmary = entry['summary'].strip().replace(' for %s' % MET_WEATHER_REGION_FULL, '')
-        weather_flowables.append(Paragraph(u"%s %s - %s" % (
-            warning_date.strftime("%a"),
-            warning_date.strftime("%I:%M%p").lower().lstrip('0'),
-            warning_summmary
-        ), style['List']))
-    
+    warning_summmaries = []
+    if warning_data['entries']:
+        print "Warnings",
+        for entry in warning_data['entries']:
+            # ADVISORY of Heavy Snow for London & South East England
+            warning_summmary = entry['summary'].strip().replace(' for %s' % MET_WEATHER_REGION_FULL, '')
+            if warning_summmary not in warning_summmaries:
+                print '.',
+                # Block dupes
+                warning_summmaries.append(warning_summmary)
+                warning_date = datetime.datetime(*entry['updated_parsed'][:6])
+                weather_flowables.append(Paragraph(u"%s %s - %s" % (
+                    warning_date.strftime("%a"),
+                    warning_date.strftime("%I:%M%p").lower().lstrip('0'),
+                    warning_summmary
+                ), style['List']))
+    print "done"
     return weather_flowables
 
 def fetch_frame_content(style, available_width, available_height):
