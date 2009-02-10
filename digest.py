@@ -258,11 +258,16 @@ def format_twitter_statuses(style):
                 date.strftime("%I:%M%p").lower().lstrip('0')
             )
         }
-        if status['in_reply_to_user_id'] == TWITTER_USERID:
-            paragraphs.append(Paragraph(text, style["TwitterReply"]))
-        else:
-            paragraphs.append(Paragraph(text, style["Twitter"]))
-        print u"•", status['user']['name']
+        try:
+            if status['in_reply_to_user_id'] == TWITTER_USERID:
+                paragraphs.append(Paragraph(text, style["TwitterReply"]))
+            else:
+                paragraphs.append(Paragraph(text, style["Twitter"]))
+            print u"•", status['user']['name']
+        except IOError, e:
+            print u"!", status['user']['name']
+            print u"ERROR: %s" % e
+            
     return paragraphs
 
 def format_newsgator_headlines(style):

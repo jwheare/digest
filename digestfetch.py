@@ -156,28 +156,29 @@ def gcal_events():
         feed = calendar_service.CalendarQuery(query)
         # print feed
         for event in feed.entry:
-            comments = []
-            if event.comments and event.comments.feed_link and event.comments.feed_link.feed:
-                for c in event.comments.feed_link.feed.entry:
-                    if c.content.text:
-                        comments.append({
-                            'author': c.author[0].name.text,
-                            'content': c.content.text,
-                        })
-            event_info = {
-                'color': color,
-                'title': event.title.text,
-                'comments': comments,
-                'allday': False,
-                'location': event.where[0].value_string
-            }
-            try:
-                start = datetime.datetime.strptime(event.when[0].start_time, "%Y-%m-%dT%H:%M:%S.000Z")
-            except ValueError:
-                start = datetime.datetime.strptime(event.when[0].start_time, "%Y-%m-%d")
-                event_info['allday'] = True
-            event_info['start'] = start
-            events.append(event_info)
+            if event.when:
+                comments = []
+                if event.comments and event.comments.feed_link and event.comments.feed_link.feed:
+                    for c in event.comments.feed_link.feed.entry:
+                        if c.content.text:
+                            comments.append({
+                                'author': c.author[0].name.text,
+                                'content': c.content.text,
+                            })
+                event_info = {
+                    'color': color,
+                    'title': event.title.text,
+                    'comments': comments,
+                    'allday': False,
+                    'location': event.where[0].value_string
+                }
+                try:
+                    start = datetime.datetime.strptime(event.when[0].start_time, "%Y-%m-%dT%H:%M:%S.000Z")
+                except ValueError:
+                    start = datetime.datetime.strptime(event.when[0].start_time, "%Y-%m-%d")
+                    event_info['allday'] = True
+                event_info['start'] = start
+                events.append(event_info)
     events.sort(key=itemgetter('start'))
     return events
 
@@ -191,10 +192,4 @@ def weather():
     return forecast_data, warning_data
 
 if __name__ == '__main__':
-    weather_data, forecast_data = weather()
-    print weather_data['feed']['image']['href']
-    for day in weather_data['entries']:
-        print day['title']
-    for entry in forecast_data['entries']:
-        print datetime.datetime(*entry['updated_parsed'][:6])
-        print entry['title']
+    gcal_events()
