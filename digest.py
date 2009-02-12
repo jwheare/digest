@@ -148,12 +148,19 @@ def get_stylesheet():
         textColor='black',
     ))
     stylesheet.add(ParagraphStyle(
+        name="Photo",
+        fontSize=1,
+        leading=0,
+    ))
+    stylesheet.add(ParagraphStyle(
         name="PhotoCaption",
         fontName="Helvetica",
-        fontSize=12,
-        leading=16,
-        leftIndent=6,
+        fontSize=10,
+        leading=14,
+        leftIndent=5,
+        borderPadding=5,
         textColor='black',
+        backColor='white',
     ))
 
     return stylesheet
@@ -471,10 +478,10 @@ def format_flickr_photo(style, width, height):
                 width,
                 height,
             ),
-            style["Body"]
+            style["Photo"]
         ),
         Paragraph(
-            u"""<b>%s</b>: %s <br /> <i>%s</i>""" % (
+            u"""<b>%s</b>: %s <br/> <i>%s</i>""" % (
                 photo.attrib['ownername'],
                 photo.attrib['title'],
                 datestring,

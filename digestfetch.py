@@ -219,6 +219,7 @@ def contact_photo():
             if size.attrib['label'] == u'Original':
                 if size.attrib['width'] > size.attrib['height']:
                     return p, size
+
 if __name__ == '__main__':
     photo, size = contact_photo()
     datetaken = datetime.datetime.strptime(photo.attrib['datetaken'], "%Y-%m-%d %H:%M:%S")
