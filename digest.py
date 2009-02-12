@@ -26,6 +26,7 @@ WIDTH, HEIGHT = PAGE_SIZE
 
 X_FRAMES = 4
 Y_FRAMES = 2
+SPREAD = ('2-1', '3-1')
 
 FRAME_PADDING = 10
 
@@ -57,21 +58,30 @@ def setup_frames(frame_width, frame_height):
     
     from reportlab.platypus import Frame
     
-    frames = [
-        Frame(
-            (x * frame_width) + MARGINS['left'],
-            (y * frame_height) + MARGINS['top'],
-            frame_width, frame_height,
-            id="%d-%d" % (x, y),
-            showBoundary=1,
-            topPadding=FRAME_PADDING,
-            rightPadding=FRAME_PADDING,
-            bottomPadding=FRAME_PADDING,
-            leftPadding=FRAME_PADDING,
-        )
-        for y in range(0, Y_FRAMES)
-        for x in range(0, X_FRAMES)
-    ]
+    frames = []
+    for y in range(0, Y_FRAMES):
+        for x in range(0, X_FRAMES):
+            frame_id = "%d-%d" % (x, y)
+            width = frame_width
+            height = frame_height
+            padding = FRAME_PADDING
+            if SPREAD[0] == frame_id:
+                width *= 2
+                padding = 0
+            pos_x = (x * frame_width) + MARGINS['left']
+            pos_y = (y * frame_height) + MARGINS['top']
+            frames.append(
+                Frame(
+                    pos_x, pos_y,
+                    width, height,
+                    id=frame_id,
+                    showBoundary=0,
+                    topPadding=padding,
+                    rightPadding=padding,
+                    bottomPadding=padding,
+                    leftPadding=padding,
+                )
+            )
     return frames
 
 def get_stylesheet():
@@ -135,6 +145,14 @@ def get_stylesheet():
         fontName="Helvetica",
         fontSize=6,
         leading=6,
+        textColor='black',
+    ))
+    stylesheet.add(ParagraphStyle(
+        name="PhotoCaption",
+        fontName="Helvetica",
+        fontSize=12,
+        leading=16,
+        leftIndent=6,
         textColor='black',
     ))
 
@@ -243,30 +261,34 @@ def format_twitter_statuses(style):
     """Format Twitter statuses into reportlab Flowables"""
     paragraphs = []
     statuses = digestfetch.twitter_friends()
-    for status in statuses:
-        date = datetime.datetime.strptime(status['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
-        text = u"""
-<img src="%(image)s" width="%(dimension)s" height="%(dimension)s" valign="top"/>
-<b>%(user)s</b>: %(message)s (<i>%(time)s</i>)
-""" % {
-            'image': status['user']['profile_image_url'],
-            'dimension': inch / 5,
-            'user': status['user']['name'],
-            'message': status['text'],
-            'time': "%s %s" % (
-                date.strftime("%a"),
-                date.strftime("%I:%M%p").lower().lstrip('0')
-            )
-        }
-        try:
+    if statuses:
+        for status in statuses:
+            date = datetime.datetime.strptime(status['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
+            image_text = u"""
+<img src="%(image)s" width="%(dimension)s" height="%(dimension)s" valign="top"/>""" % {
+                'image': status['user']['profile_image_url'],
+                'dimension': inch / 5,
+            }
+            message_text = u"""
+<b>%(user)s</b>: %(message)s (<i>%(time)s</i>)""" % {
+                'user': status['user']['name'],
+                'message': status['text'],
+                'time': "%s %s" % (
+                    date.strftime("%a"),
+                    date.strftime("%I:%M%p").lower().lstrip('0')
+                )
+            }
             if status['in_reply_to_user_id'] == TWITTER_USERID:
-                paragraphs.append(Paragraph(text, style["TwitterReply"]))
+                status_style = style["TwitterReply"]
             else:
-                paragraphs.append(Paragraph(text, style["Twitter"]))
-            print u"•", status['user']['name']
-        except IOError, e:
-            print u"!", status['user']['name']
-            print u"ERROR: %s" % e
+                status_style = style["Twitter"]
+            try:
+                paragraphs.append(Paragraph(u"%s %s" % (image_text, message_text), status_style))
+                print u"• %s" % status['user']['name']
+            except IOError, e:
+                paragraphs.append(Paragraph(message_text, status_style))
+                print u"ERROR: %s" % e
+                print u"! %s" % status['user']['name']
             
     return paragraphs
 
@@ -430,8 +452,46 @@ def format_weather(style, available_width):
     print "done"
     return weather_flowables
 
-def fetch_frame_content(style, available_width, available_height):
+def format_flickr_photo(style, width, height):
+    photo, size = digestfetch.contact_photo()
+    datetaken = datetime.datetime.strptime(photo.attrib['datetaken'], "%Y-%m-%d %H:%M:%S")
+    datestring = "%s %s" % (datetaken.strftime("%A"), datetaken.strftime("%I:%M%p").lower().lstrip('0'))
+    aspect_ratio = float(size.attrib['height']) / float(size.attrib['width'])
+    height = width * aspect_ratio
+    print u"• %s: %s (%s)" % (
+        photo.attrib['ownername'],
+        photo.attrib['title'],
+        datestring
+    )
+    print u"- %s" % size.attrib['source']
+    return [
+        Paragraph(
+            u"""<img src="%s" valign="top" width="%s" height="%s"/>""" % (
+                size.attrib['source'],
+                width,
+                height,
+            ),
+            style["Body"]
+        ),
+        Paragraph(
+            u"""<b>%s</b>: %s <br /> <i>%s</i>""" % (
+                photo.attrib['ownername'],
+                photo.attrib['title'],
+                datestring,
+            ),
+            style["PhotoCaption"]
+        )
+    ]
+
+def fetch_frame_content(style, frame_width, frame_height):
     """Fetch content to stuff in our frames"""
+    
+    available_width = frame_width - FRAME_PADDING*2
+    available_height = frame_height - FRAME_PADDING*2
+    
+    print "Fetching Flickr photo"
+    flickr_flowable = format_flickr_photo(style, frame_width*2, frame_height)
+    print "==================="
     
     print "Fetching weather forecast"
     weather_flowables = format_weather(style, available_width)
@@ -501,12 +561,12 @@ def fetch_frame_content(style, available_width, available_height):
         '2-1': {
             'page': '3 left',
             'row': 'top',
-            'content': [Paragraph(u"3 left", style["Body"])],
+            'content': flickr_flowable,
         },
         '3-1': {
             'page': '4 right',
             'row': 'top',
-            'content': [Paragraph(u"4 right", style["Body"])],
+            'content': '',
         },
         '0-0': {
             'page': '5 left',
@@ -568,10 +628,7 @@ def main():
     
     stylesheet = get_stylesheet()
     
-    available_width = frame_width - FRAME_PADDING*2
-    available_height = frame_height - FRAME_PADDING*2
-    
-    content = fetch_frame_content(stylesheet, available_width, available_height)
+    content = fetch_frame_content(stylesheet, frame_width, frame_height)
     
     draw_frames(digest_canvas, frames, content, row_translations)
     

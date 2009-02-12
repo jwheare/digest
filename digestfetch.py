@@ -18,6 +18,7 @@ import simplejson
 import feedparser
 from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup, SoupStrainer
 import gdata.calendar.service
+import flickrapi
 
 # Settings, keys, passwords
 from settings import *
@@ -191,5 +192,35 @@ def weather():
     
     return forecast_data, warning_data
 
+def flickr_auth():
+    """Authenticate with the Flickr API"""
+    flickr = flickrapi.FlickrAPI(FLICKR_KEY, FLICKR_SECRET)
+    
+    token, frob = flickr.get_token_part_one(perms='read')
+    if not token:
+        raw_input("Press ENTER after you authorized this program")
+        flickr.get_token_part_two((token, frob))
+    return flickr
+    
+def contact_photo():
+    flickr = flickr_auth()
+    yesterday = datetime.datetime.now() - datetime.timedelta(hours=24)
+    photos = flickr.photos_search(
+        user_id='me',
+        contacts='all',
+        media='photos',
+        sort='interestingness-desc',
+        min_upload_date=int(time.mktime(yesterday.timetuple())),
+        extras='owner_name,tags,date_taken'
+    )
+    for p in photos.findall('photos/photo'):
+        sizes = flickr.photos_getSizes(photo_id=p.attrib['id'])
+        for size in sizes.findall("sizes/size"):
+            if size.attrib['label'] == u'Original':
+                if size.attrib['width'] > size.attrib['height']:
+                    return p, size
 if __name__ == '__main__':
-    gcal_events()
+    photo, size = contact_photo()
+    datetaken = datetime.datetime.strptime(photo.attrib['datetaken'], "%Y-%m-%d %H:%M:%S")
+    print photo.attrib['ownername'], photo.attrib['title'], datetaken.strftime("%a"), datetaken.strftime("%I:%M%p").lower().lstrip('0')
+    print size.attrib['source']
