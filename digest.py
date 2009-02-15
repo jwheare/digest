@@ -11,15 +11,15 @@ import datetime, time
 import re
 import sys
 
-from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib.units import inch
-from reportlab.lib.colors import HexColor
-from reportlab.platypus import Paragraph, Spacer, Image, Table, TableStyle
+from lib.reportlab.lib.pagesizes import A4, landscape
+from lib.reportlab.lib.units import inch
+from lib.reportlab.lib.colors import HexColor
+from lib.reportlab.platypus import Paragraph, Spacer, Image, Table, TableStyle
 
-import pylast
+import lib.pylast
 import digestfetch
 
-from django.dateformat import DateFormat
+from lib.django.dateformat import DateFormat
 
 from settings import *
 

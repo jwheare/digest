@@ -13,7 +13,7 @@ from copy import copy
 from operator import itemgetter
 
 # 3rd party modules
-import pylast
+import lib.pylast
 import simplejson
 import feedparser
 from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup, SoupStrainer
