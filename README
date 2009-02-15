@@ -51,10 +51,13 @@ APIs:
   http://apiwiki.twitter.com/
 - Newsgator
   http://www.newsgator.com/ngs/api/
+  http://www.newsgator.com/ngs/TermsOfService.aspx
+  http://nmp.newsgator.com/NGBuzz/Images/PoweredbyNG.gif
 - Google Calendar
   http://code.google.com/apis/calendar/
 - Flickr
   http://www.flickr.com/services/api/
+  This product uses the Flickr API but is not endorsed or certified by Flickr.
 
 RSS:
 - BBC Weather
