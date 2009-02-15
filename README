@@ -1,6 +1,12 @@
-Scripts to generates a daily digest PDF in pocketmod booklet form to print out and enjoy.
+Generate a daily digest PDF in pocketmod booklet form to print out and enjoy.
 
 See: http://www.pocketmod.com/
+
+Usage:
+
+    python digest.py
+
+This will run through and fetch all the data, and save a PDF file in output/digest.pdf. The file will be opened when the script completes
 
 I'm slowly filling in the pages of the booklet. I'll add them here in the order they appear:
 

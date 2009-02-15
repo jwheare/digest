@@ -185,14 +185,20 @@ def format_event_recommendations(style):
             print u'• %s (%s)' % (e.getTitle(), e.getID())
             startDate = e.getStartDate()
             df = DateFormat(startDate)
-            text = u"""
-<img src="%(image)s" width="%(dimension)s" height="%(dimension)s" valign="top"/>
+            image = e.getImage(pylast.IMAGE_SMALL)
+            image_html = ""
+            if image:
+                image_html = u"""
+<img src="%(image)s" width="%(dimension)s" height="%(dimension)s" valign="top"/>""" % {
+                    'image': e.getImage(pylast.IMAGE_SMALL),
+                    'dimension': inch / 4,
+                }
+            text = u"""%(image_html)s
 <seq id="eventrec">. <b>%(title)s</b> %(time)s - %(venue)s %(postcode)s
 <br/>
 %(artists)s
 """ % {
-                'image': e.getImage(pylast.IMAGE_SMALL),
-                'dimension': inch / 4,
+                'image_html': image_html,
                 'title': e.getTitle(),
                 'artists': u", ".join(e._getFromInfo('artists')),
                 'venue': e.getVenueName(),
