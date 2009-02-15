@@ -6,18 +6,23 @@ Fetch bitesize content from the world of the web for use in a daily digest pocke
 """
 
 # Builtin modules
-import re
-import urllib, urllib2
-import time, datetime
 from copy import copy
 from operator import itemgetter
+import re
+import time, datetime
+import urllib, urllib2
 
 # 3rd party modules
-import lib.pylast
-import simplejson
-import feedparser
-from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup, SoupStrainer
+import pylast
+
 import gdata.calendar.service
+
+from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup, SoupStrainer
+
+import simplejson
+
+import feedparser
+
 import flickrapi
 
 # Settings, keys, passwords
@@ -152,34 +157,36 @@ def gcal_events():
         query.start_max = start_max
         query.orderby = 'starttime'
         query.sortorder = 'ascending'
-        # print query
         
-        feed = calendar_service.CalendarQuery(query)
-        # print feed
-        for event in feed.entry:
-            if event.when:
-                comments = []
-                if event.comments and event.comments.feed_link and event.comments.feed_link.feed:
-                    for c in event.comments.feed_link.feed.entry:
-                        if c.content.text:
-                            comments.append({
-                                'author': c.author[0].name.text,
-                                'content': c.content.text,
-                            })
-                event_info = {
-                    'color': color,
-                    'title': event.title.text,
-                    'comments': comments,
-                    'allday': False,
-                    'location': event.where[0].value_string
-                }
-                try:
-                    start = datetime.datetime.strptime(event.when[0].start_time, "%Y-%m-%dT%H:%M:%S.000Z")
-                except ValueError:
-                    start = datetime.datetime.strptime(event.when[0].start_time, "%Y-%m-%d")
-                    event_info['allday'] = True
-                event_info['start'] = start
-                events.append(event_info)
+        try:
+            feed = calendar_service.CalendarQuery(query)
+            # print feed
+            for event in feed.entry:
+                if event.when:
+                    comments = []
+                    if event.comments and event.comments.feed_link and event.comments.feed_link.feed:
+                        for c in event.comments.feed_link.feed.entry:
+                            if c.content.text:
+                                comments.append({
+                                    'author': c.author[0].name.text,
+                                    'content': c.content.text,
+                                })
+                    event_info = {
+                        'color': color,
+                        'title': event.title.text,
+                        'comments': comments,
+                        'allday': False,
+                        'location': event.where[0].value_string
+                    }
+                    try:
+                        start = datetime.datetime.strptime(event.when[0].start_time, "%Y-%m-%dT%H:%M:%S.000Z")
+                    except ValueError:
+                        start = datetime.datetime.strptime(event.when[0].start_time, "%Y-%m-%d")
+                        event_info['allday'] = True
+                    event_info['start'] = start
+                    events.append(event_info)
+        except BadStatusLine, e:
+            print "! %s" % e
     events.sort(key=itemgetter('start'))
     return events
 
@@ -213,15 +220,16 @@ def contact_photo():
         min_upload_date=int(time.mktime(yesterday.timetuple())),
         extras='owner_name,tags,date_taken'
     )
+    print "Searching",
     for p in photos.findall('photos/photo'):
+        print '#',
         sizes = flickr.photos_getSizes(photo_id=p.attrib['id'])
         for size in sizes.findall("sizes/size"):
+            print '.',
             if size.attrib['label'] == u'Original':
                 if int(size.attrib['width']) > int(size.attrib['height']):
+                    print 'done'
                     return p, size
 
 if __name__ == '__main__':
-    photo, size = contact_photo()
-    datetaken = datetime.datetime.strptime(photo.attrib['datetaken'], "%Y-%m-%d %H:%M:%S")
-    print photo.attrib['ownername'], photo.attrib['title'], datetaken.strftime("%a"), datetaken.strftime("%I:%M%p").lower().lstrip('0')
-    print size.attrib['source']
+    gcal_events()

@@ -5,22 +5,27 @@ digest.py
 Generate a daily digest PDF pocketmod booklet to print out and enjoy
 """
 
-import urllib
+# Builtin modules
 import copy
-import datetime, time
 import re
 import sys
+import time, datetime
+import urllib
 
-from lib.reportlab.lib.pagesizes import A4, landscape
-from lib.reportlab.lib.units import inch
-from lib.reportlab.lib.colors import HexColor
-from lib.reportlab.platypus import Paragraph, Spacer, Image, Table, TableStyle
-
-import lib.pylast
+# Data fetch lib
 import digestfetch
 
-from lib.django.dateformat import DateFormat
+# 3rd party modules
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.units import inch
+from reportlab.lib.colors import HexColor
+from reportlab.platypus import Paragraph, Spacer, Image, Table, TableStyle
 
+import pylast
+
+from django.dateformat import DateFormat
+
+# Settings, keys, passwords
 from settings import *
 
 PAGE_SIZE = landscape(A4)

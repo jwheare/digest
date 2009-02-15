@@ -16,12 +16,6 @@ I'm slowly filling in the pages of the booklet. I'll add them here in the order 
 Required libs:
 - pylast 0.3 branch revision 163 (PATCHED see lib/pylast.diff)
   http://code.google.com/p/pylast/source/browse/branches/0.3/?r=163 GPL
-- simplejson
-  http://code.google.com/p/simplejson/ MIT
-- feedparser
-  http://www.feedparser.org/ MIT
-- flickrapi
-  http://stuvel.eu/projects/flickrapi Python
 
 Bundled libs:
 - Some Django utils
@@ -32,6 +26,12 @@ Bundled libs:
   http://code.google.com/p/gdata-python-client/ Apache
 - BeautifulSoup
   http://www.crummy.com/software/BeautifulSoup/ BSD
+- simplejson
+  http://code.google.com/p/simplejson/ MIT
+- feedparser
+  http://www.feedparser.org/ MIT
+- flickrapi
+  http://stuvel.eu/projects/flickrapi Python
 
 You'll also need a settings.py file module which defines things like api keys, usernames and passwords.
 See settings.example.py
