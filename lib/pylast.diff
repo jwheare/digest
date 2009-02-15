@@ -1,0 +1,109 @@
+--- pylast.py
++++ pylast.py
+@@ -38,6 +38,8 @@
+ import httplib
+ import urllib
+ import threading
++import time
++import datetime
+ from xml.dom import minidom
+ 
+ STATUS_INVALID_SERVICE = 2
+@@ -1184,6 +1186,7 @@
+ 		_BaseObject.__init__(self, api_key, secret, session_key)
+ 		
+ 		self.id = unicode(event_id)
++		self.data = {}
+ 	
+ 	def _getParams(self):
+ 		return {'sk': self.session_key, 'event': self.getID()}
+@@ -1201,44 +1204,54 @@
+ 		
+ 		doc = _Request('event.attend', params, *self.auth_data).execute()
+ 	
+-	def _getInfo(self):
++	def _getInfo(self, refetch = False):
+ 		"""Get the metadata for an event on Last.fm
+ 		Includes attendance and lineup information"""
+ 		
+-		params = self._getParams()
+-		
+-		doc = _Request('event.getInfo', params, *self.auth_data).execute()
+-		
+-		data = {}
+-		data['title'] = self._extract(doc, 'title')
+-		artists = []
+-		for i in range(0, len(doc.getElementsByTagName('artist'))):
+-			artists.append(self._extract(doc, 'artist', i))
+-		data['artists'] = artists
+-		data['headliner'] = self._extract(doc, 'headliner')
+-		
+-		venue = {}
+-		venue['name'] = self._extract(doc, 'name')
+-		venue['city'] = self._extract(doc, 'city')
+-		venue['country'] = self._extract(doc, 'country')
+-		venue['street'] = self._extract(doc, 'street')
+-		venue['postal_code'] = self._extract(doc, 'postalcode')
+-		
+-		geo = {}
+-		geo['lat'] = self._extract(doc, 'geo:lat')
+-		geo['long'] = self._extract(doc, 'geo:long')
+-		
+-		venue['geo'] = geo
+-		venue['time_zone'] = self._extract(doc, 'timezone')
+-		
+-		data['venue'] = venue
+-		data['description'] = self._extract(doc, 'description')
+-		data['images'] = self._extract_all(doc, 'image')
+-		data['attendance'] = self._extract(doc, 'attendance')
+-		data['reviews'] = self._extract(doc, 'reviews')
+-		
+-		
+-		return data
++		if not self.data or refetch:
++			params = self._getParams()
++			
++			doc = _Request('event.getInfo', params, *self.auth_data).execute()
++			
++			self.data = {}
++			self.data['title'] = self._extract(doc, 'title')
++			artists = []
++			for i in range(0, len(doc.getElementsByTagName('artist'))):
++				artists.append(self._extract(doc, 'artist', i))
++			self.data['artists'] = artists
++			self.data['headliner'] = self._extract(doc, 'headliner')
++			self.data['startDate'] = self._extract(doc, 'startDate')
++			
++			venue = {}
++			venue['name'] = self._extract(doc, 'name')
++			venue['city'] = self._extract(doc, 'city')
++			venue['country'] = self._extract(doc, 'country')
++			venue['street'] = self._extract(doc, 'street')
++			venue['postal_code'] = self._extract(doc, 'postalcode')
++			
++			geo = {}
++			geo['lat'] = self._extract(doc, 'geo:lat')
++			geo['long'] = self._extract(doc, 'geo:long')
++			
++			venue['geo'] = geo
++			venue['time_zone'] = self._extract(doc, 'timezone')
++			
++			self.data['venue'] = venue
++			self.data['description'] = self._extract(doc, 'description')
++			self.data['images'] = self._extract_all(doc, 'image')
++			self.data['attendance'] = self._extract(doc, 'attendance')
++			self.data['reviews'] = self._extract(doc, 'reviews')
++		
++		return self.data
++	
++	def getStartDate(self):
++		"""Returns the start date of the event as a datetime object. """
++		
++		startDate = self._getFromInfo('startDate')
++		if startDate:
++			return datetime.datetime(*time.strptime(startDate, "%a, %d %b %Y %H:%M:%S")[:6])
++		else:
++			return None
+ 	
+ 	def getID(self):
+ 		"""Returns the id of the event on Last.fm. """
