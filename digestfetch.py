@@ -217,7 +217,7 @@ def contact_photo():
         sizes = flickr.photos_getSizes(photo_id=p.attrib['id'])
         for size in sizes.findall("sizes/size"):
             if size.attrib['label'] == u'Original':
-                if size.attrib['width'] > size.attrib['height']:
+                if int(size.attrib['width']) > int(size.attrib['height']):
                     return p, size
 
 if __name__ == '__main__':

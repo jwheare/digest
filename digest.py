@@ -19,6 +19,8 @@ from reportlab.platypus import Paragraph, Spacer, Image, Table, TableStyle
 import pylast
 import digestfetch
 
+from django.dateformat import DateFormat
+
 from settings import *
 
 PAGE_SIZE = landscape(A4)
@@ -26,7 +28,7 @@ WIDTH, HEIGHT = PAGE_SIZE
 
 X_FRAMES = 4
 Y_FRAMES = 2
-SPREAD = ('2-1', '3-1')
+SPREAD = '0-0'
 
 FRAME_PADDING = 10
 
@@ -65,7 +67,7 @@ def setup_frames(frame_width, frame_height):
             width = frame_width
             height = frame_height
             padding = FRAME_PADDING
-            if SPREAD[0] == frame_id:
+            if SPREAD == frame_id:
                 width *= 2
                 padding = 0
             pos_x = (x * frame_width) + MARGINS['left']
@@ -177,6 +179,7 @@ def format_event_recommendations(style):
         try:
             print u'• %s (%s)' % (e.getTitle(), e.getID())
             startDate = e.getStartDate()
+            df = DateFormat(startDate)
             text = u"""
 <img src="%(image)s" width="%(dimension)s" height="%(dimension)s" valign="top"/>
 <seq id="eventrec">. <b>%(title)s</b> %(time)s - %(venue)s %(postcode)s
@@ -189,10 +192,7 @@ def format_event_recommendations(style):
                 'artists': u", ".join(e._getFromInfo('artists')),
                 'venue': e.getVenueName(),
                 'postcode': e.getPostalCode() or u"",
-                'time': u"%s %s" % (
-                    startDate.strftime("%a"),
-                    startDate.strftime("%I:%M%p").lower().lstrip('0')
-                )
+                'time': df.format('D P'),
             }
             latlongs.append((i, "%s,%s" % e.getGeoPoint()))
             i += 1
@@ -270,7 +270,8 @@ def format_twitter_statuses(style):
     statuses = digestfetch.twitter_friends()
     if statuses:
         for status in statuses:
-            date = datetime.datetime.strptime(status['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
+            updateDate = datetime.datetime.strptime(status['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
+            df = DateFormat(updateDate)
             image_text = u"""
 <img src="%(image)s" width="%(dimension)s" height="%(dimension)s" valign="top"/>""" % {
                 'image': status['user']['profile_image_url'],
@@ -280,10 +281,7 @@ def format_twitter_statuses(style):
 <b>%(user)s</b>: %(message)s (<i>%(time)s</i>)""" % {
                 'user': status['user']['name'],
                 'message': status['text'],
-                'time': "%s %s" % (
-                    date.strftime("%a"),
-                    date.strftime("%I:%M%p").lower().lstrip('0')
-                )
+                'time': df.format('D P')
             }
             if status['in_reply_to_user_id'] == TWITTER_USERID:
                 status_style = style["TwitterReply"]
@@ -307,13 +305,13 @@ def format_newsgator_headlines(style):
     flowables = []
     for entry in data.entries:
         updated = datetime.datetime.strptime(entry.updated, "%a, %d %b %Y %H:%M:%S %Z")
+        df = DateFormat(updated)
         print ".",
         flowables.append(Paragraph(u"""<bullet>•</bullet> %s
-<b>%s</b> (<i>%s %s</i>)""" % (
+<b>%s</b> (<i>%s</i>)""" % (
             entry.feedtitle,
             entry.title,
-            updated.strftime("%a"),
-            updated.strftime("%I:%M%p").lower().lstrip('0')
+            df.format('D P'),
         ), style["List"]))
     print "done"
     return flowables
@@ -330,8 +328,9 @@ def format_gcal_events(style, available_width):
     row = 0
     weekday = ''
     for e in events:
+        df = DateFormat(e['start'])
         old_weekday = weekday
-        weekday = e['start'].strftime("%a")
+        weekday = df.format('D')
         new_day = False
         if old_weekday and old_weekday != weekday:
             line_styles.append(
@@ -344,7 +343,7 @@ def format_gcal_events(style, available_width):
         else:
             startstring = u"%s %s" % (
                 weekday,
-                e['start'].strftime("%I:%M%p").lower().lstrip('0')
+                df.format('P'),
             )
             formatstring = u"%s"
         
@@ -451,9 +450,9 @@ def format_weather(style, available_width):
                 # Block dupes
                 warning_summmaries.append(warning_summmary)
                 warning_date = datetime.datetime(*entry['updated_parsed'][:6])
-                weather_flowables.append(Paragraph(u"%s %s - %s" % (
-                    warning_date.strftime("%a"),
-                    warning_date.strftime("%I:%M%p").lower().lstrip('0'),
+                df = DateFormat(warning_date)
+                weather_flowables.append(Paragraph(u"%s - %s" % (
+                    df.format('D P'),
                     warning_summmary
                 ), style['List']))
     print "done"
@@ -462,7 +461,8 @@ def format_weather(style, available_width):
 def format_flickr_photo(style, width, height):
     photo, size = digestfetch.contact_photo()
     datetaken = datetime.datetime.strptime(photo.attrib['datetaken'], "%Y-%m-%d %H:%M:%S")
-    datestring = "%s %s" % (datetaken.strftime("%A"), datetaken.strftime("%I:%M%p").lower().lstrip('0'))
+    df = DateFormat(datetaken)
+    datestring = df.format('l F jS P')
     aspect_ratio = float(size.attrib['height']) / float(size.attrib['width'])
     height = width * aspect_ratio
     print u"• %s: %s (%s)" % (
@@ -543,7 +543,7 @@ def fetch_frame_content(style, frame_width, frame_height):
         '1-0': {
             'page': '6 right',
             'row': 'bottom',
-            'content': tube_flowables,
+            'content': '',
         },
         '2-0': {
             'page': 'Back',
@@ -553,32 +553,32 @@ def fetch_frame_content(style, frame_width, frame_height):
         '3-0': {
             'page': 'Front',
             'row': 'bottom',
-            'content': newsgator_flowables,
+            'content': event_flowables,
         },
         '0-1': {
             'page': '1 left',
             'row': 'top',
-            'content': [Paragraph(u"1 left", style["Body"])],
+            'content': newsgator_flowables,
         },
         '1-1': {
             'page': '2 right',
             'row': 'top',
-            'content': event_flowables,
+            'content': [Paragraph(u"2 right", style["Body"])],
         },
         '2-1': {
             'page': '3 left',
             'row': 'top',
-            'content': flickr_flowable,
+            'content': weather_flowables + [Spacer(available_width, 8)] + gcal_flowables
         },
         '3-1': {
             'page': '4 right',
             'row': 'top',
-            'content': '',
+            'content': tube_flowables,
         },
         '0-0': {
             'page': '5 left',
             'row': 'bottom',
-            'content': weather_flowables + [Spacer(available_width, 8)] + gcal_flowables,
+            'content': flickr_flowable,
         },
     }
     return content
