@@ -25,26 +25,8 @@ Bundled libs:
 - Some Django utils: http://www.djangoproject.com/ (BSD)
 - ReportLab: http://www.reportlab.org/ (BSD)
 
-You'll also need a settings module which defines these globals:
-GMAPS_KEY
-LASTFM_KEY
-LASTFM_SECRET
-LASTFM_SESSION
-TWITTER_USERNAME
-TWITTER_PASSWORD
-TWITTER_USERID
-NEWSGATOR_KEY
-NEWSGATOR_USERNAME
-NEWSGATOR_PASSWORD
-NEWSGATOR_LOCATIONID
-GCAL_USERNAME
-GCAL_PASSWORD
-GCAL_CALENDARS e.g. {'calendar id': ('display name': 'hexcolor')}
-BBC_WEATHER_LOCATION e.g. 4581 in http://www.bbc.co.uk/weather/5day.shtml?world=4581
-MET_WEATHER_REGION e.g. 'se' in http://www.metoffice.gov.uk/weather/uk/se/se_forecast_weather.html
-MET_WEATHER_REGION_FULL e.g. London & South East England as seen at above URL
-FLICKR_KEY
-FLICKR_SECRET
+You'll also need a settings.py file module which defines things like api keys, usernames and passwords.
+See settings.example.py
 
 APIs:
 - Google Static Maps: http://code.google.com/apis/maps/documentation/staticmaps/
