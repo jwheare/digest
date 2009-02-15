@@ -21,6 +21,7 @@ GCAL_CALENDARS = {
 
 # See http://www.bbc.co.uk/weather/5day.shtml?world=4581
 BBC_WEATHER_LOCATION = 4581
+
 # See http://www.metoffice.gov.uk/weather/uk/se/se_forecast_weather.html
 MET_WEATHER_REGION = 'se'
 MET_WEATHER_REGION_FULL = "London & South East England"
