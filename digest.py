@@ -5,6 +5,8 @@ digest.py
 Generate a daily digest PDF pocketmod booklet to print out and enjoy
 """
 
+import sitecustomize
+
 # Builtin modules
 import copy
 import re

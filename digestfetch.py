@@ -5,12 +5,14 @@ digestfetch.py
 Fetch bitesize content from the world of the web for use in a daily digest pocketmod
 """
 
+import sitecustomize
+
 # Builtin modules
 from copy import copy
 from operator import itemgetter
 import re
 import time, datetime
-import urllib, urllib2
+import urllib, urllib2, httplib
 
 # 3rd party modules
 import pylast
@@ -185,7 +187,7 @@ def gcal_events():
                         event_info['allday'] = True
                     event_info['start'] = start
                     events.append(event_info)
-        except BadStatusLine, e:
+        except httplib.BadStatusLine, e:
             print "! %s" % e
     events.sort(key=itemgetter('start'))
     return events
