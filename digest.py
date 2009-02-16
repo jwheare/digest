@@ -10,7 +10,7 @@ import sitecustomize
 # Builtin modules
 import copy
 import re
-import sys
+import os, sys
 import time, datetime
 import urllib
 
@@ -52,7 +52,8 @@ TR = (1, 0)
 BR = (1, -1)
 BL = (0, -1)
 
-FILENAME = "output/digest.pdf"
+FILENAME = os.path.join(PROJECT_PATH, "output/digest.pdf")
+print FILENAME
 
 def calculate_frame_dimensions():
     """Get the width and height of our frames"""

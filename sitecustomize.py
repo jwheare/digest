@@ -1,3 +1,3 @@
 import sys, os
-PROJECT_PATH = os.path.dirname(os.path.abspath(__file__))
+from settings import PROJECT_PATH
 sys.path = [os.path.join(PROJECT_PATH, 'lib')] + sys.path

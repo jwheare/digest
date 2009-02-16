@@ -1,3 +1,5 @@
+PROJECT_PATH = os.path.dirname(os.path.abspath(__file__))
+
 GMAPS_KEY = '[api key]'
 
 LASTFM_KEY = '[api key]'
@@ -13,11 +15,8 @@ NEWSGATOR_USERNAME = '[username]'
 NEWSGATOR_PASSWORD = '[password]'
 NEWSGATOR_LOCATIONID = '[location id]'
 
-GCAL_USERNAME = '[username]'
-GCAL_PASSWORD = '[password]'
-GCAL_CALENDARS = {
-    '[calendar id]': ('[display name]', '[hex colour]'),
-}
+FLICKR_KEY = '[api key]'
+FLICKR_SECRET = '[api secret]'
 
 # See http://www.bbc.co.uk/weather/5day.shtml?world=4581
 BBC_WEATHER_LOCATION = 4581
@@ -26,5 +25,9 @@ BBC_WEATHER_LOCATION = 4581
 MET_WEATHER_REGION = 'se'
 MET_WEATHER_REGION_FULL = "London & South East England"
 
-FLICKR_KEY = '[api key]'
-FLICKR_SECRET = '[api secret]'
+GCAL_USERNAME = '[username]'
+GCAL_PASSWORD = '[password]'
+GCAL_CALENDARS = {
+    '[calendar id]': ('[display name]', '[hex colour]'),
+    # ...
+}
