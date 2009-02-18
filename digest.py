@@ -12,7 +12,7 @@ import copy
 import re
 import os, sys
 import time, datetime
-import urllib
+import urllib, httplib
 
 # Data fetch lib
 import digestfetch
@@ -211,8 +211,8 @@ def format_event_recommendations(style):
             latlongs.append((i, "%s,%s" % e.getGeoPoint()))
             i += 1
             paragraphs.append(Paragraph(text, style["Event"]))
-        except pylast.ServiceException:
-            pass
+        except (pylast.ServiceException, httplib.BadStatusLine), exc:
+            print u'! FAILED - %s (%s)' % (exc, e.getID())
     return paragraphs, latlongs
 
 def generate_map_url(latlongs, width, height):
