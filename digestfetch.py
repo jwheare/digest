@@ -183,8 +183,11 @@ def gcal_events():
                     try:
                         start = datetime.datetime.strptime(event.when[0].start_time, "%Y-%m-%dT%H:%M:%S.000Z")
                     except ValueError:
-                        start = datetime.datetime.strptime(event.when[0].start_time, "%Y-%m-%d")
-                        event_info['allday'] = True
+                        try:
+                            start = datetime.datetime.strptime(event.when[0].start_time, "%Y-%m-%dT%H:%M:%S.000+01:00")
+                        except ValueError:
+                            start = datetime.datetime.strptime(event.when[0].start_time, "%Y-%m-%d")
+                            event_info['allday'] = True
                     event_info['start'] = start
                     events.append(event_info)
         except httplib.BadStatusLine, e:

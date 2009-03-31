@@ -361,7 +361,7 @@ def format_gcal_events(style, available_width):
             )
             formatstring = u"%s"
         
-        title_data = [Paragraph(formatstring % e['title'], style["Cal"])]
+        title_data = [Paragraph(formatstring % e['title'].decode('utf8'), style["Cal"])]
         
         if e['location']:
             title_data.append(Paragraph(e['location'], style["Cal"]))
