@@ -20,6 +20,9 @@ I'm slowly filling in the pages of the booklet. I'll add them here in the order 
 8. 
 
 Required libs:
+- PIL (compiled with jpeg support)
+  http://www.pythonware.com/products/pil/
+  http://www.ijg.org/
 - pylast 0.3 branch revision 163 (PATCHED see lib/pylast.diff)
   http://code.google.com/p/pylast/source/browse/branches/0.3/?r=163 GPL
 

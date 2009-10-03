@@ -13,6 +13,7 @@ import re
 import os, sys
 import time, datetime
 import urllib, httplib
+from xml.sax import saxutils
 
 # Data fetch lib
 import digestfetch
@@ -219,14 +220,16 @@ def generate_map_url(latlongs, width, height):
     """Generate a Google Static Map image URL"""
     
     marker_color = "red"
-    event_map_markers = ["%s,%s%i" % (latlong, marker_color, i) for i, latlong in latlongs]
-    event_map_url = "http://maps.google.com/staticmap?" + urllib.urlencode({
-        "size": "%ix%i" % (width, height),
-        "maptype": "mobile",
-        "markers": "|".join(event_map_markers),
+    event_map_markers = ["&markers=color:%s|label:%i|%s" % (marker_color, i, latlong) for i, latlong in latlongs]
+    event_map_url = "http://maps.google.com/maps/api/staticmap?" + urllib.urlencode({
         "key": GMAPS_KEY,
-        "sensor": "false"
-    })
+        "maptype": "roadmap",
+        "format": "png32",
+        "size": "%ix%i" % (width, height),
+        "mobile": "true",
+        "sensor": "false",
+    }) + "".join(event_map_markers)
+    print event_map_url
     return event_map_url
 
 def format_tube_status(style, available_width):
@@ -510,18 +513,6 @@ def fetch_frame_content(style, frame_width, frame_height):
     available_width = frame_width - FRAME_PADDING*2
     available_height = frame_height - FRAME_PADDING*2
     
-    print "Fetching Flickr photo"
-    flickr_flowable = format_flickr_photo(style, frame_width*2, frame_height)
-    print "==================="
-    
-    print "Fetching weather forecast"
-    weather_flowables = format_weather(style, available_width)
-    print "==================="
-    
-    print "Fetching Google Calendar events"
-    gcal_flowables = format_gcal_events(style, available_width)
-    print "==================="
-    
     print "Fetching event recs"
     event_flowables, latlongs = format_event_recommendations(style)
     
@@ -533,12 +524,24 @@ def fetch_frame_content(style, frame_width, frame_height):
     if event_map_url:
         event_flowables.insert(0, Spacer(map_width, map_height))
         event_flowables.insert(0, Paragraph(
-            u'<img src="%s" valign="top" width="%s" height="%s"/>' % (
-                event_map_url,
+            u'<img src=%s valign="top" width="%s" height="%s"/>' % (
+                saxutils.quoteattr(event_map_url),
                 map_width,
                 map_height,
             ), style["Body"])
         )
+    print "==================="
+    
+    print "Fetching Flickr photo"
+    flickr_flowable = format_flickr_photo(style, frame_width*2, frame_height)
+    print "==================="
+    
+    print "Fetching weather forecast"
+    weather_flowables = format_weather(style, available_width)
+    print "==================="
+    
+    print "Fetching Google Calendar events"
+    gcal_flowables = format_gcal_events(style, available_width)
     print "==================="
     
     print "Fetching tube status"
